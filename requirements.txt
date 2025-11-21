@@ -5,9 +5,9 @@ numpy>=1.24.0
 pandas>=2.0.0
 scipy>=1.10.0
 
-# Visualization for static plots
-matplotlib>=3.7.0
-
 # Interactive dashboard
 dash>=2.14.0
 plotly>=5.17.0
+
+# Production server
+gunicorn>=21.2.0
