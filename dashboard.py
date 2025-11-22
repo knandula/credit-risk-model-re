@@ -52,6 +52,80 @@ app.index_string = '''
         {%favicon%}
         {%css%}
         <style>
+            /* Hero Explainer Animations */
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            @keyframes fillProgress {
+                from { width: 0; }
+                to { width: 100%; }
+            }
+            
+            @keyframes fillTier {
+                from { transform: scaleX(0); opacity: 0; }
+                to { transform: scaleX(1); opacity: 1; }
+            }
+            
+            .hero-explainer .step {
+                animation: fadeIn 0.8s ease-out forwards;
+            }
+            
+            .hero-explainer .arrow {
+                animation: slideDown 0.6s ease-out forwards;
+            }
+            
+            .hero-explainer .step-1 { animation-delay: 0.2s; }
+            .hero-explainer .step-2 { animation-delay: 0.7s; }
+            .hero-explainer .step-3 { animation-delay: 1.2s; }
+            .hero-explainer .step-4 { animation-delay: 1.7s; }
+            .hero-explainer .step-5 { animation-delay: 2.2s; }
+            
+            .hero-explainer .arrow:nth-of-type(2) { animation-delay: 0.5s; }
+            .hero-explainer .arrow:nth-of-type(4) { animation-delay: 1s; }
+            .hero-explainer .arrow:nth-of-type(6) { animation-delay: 1.5s; }
+            .hero-explainer .arrow:nth-of-type(8) { animation-delay: 2s; }
+            
+            .hero-explainer .progress-fill {
+                animation: fillProgress 3s ease-out 2s forwards;
+                width: 0;
+            }
+            
+            .hero-explainer .tier {
+                animation: fillTier 0.8s ease-out forwards;
+                transform-origin: left;
+            }
+            
+            .hero-explainer .tier-1 { animation-delay: 2.5s; }
+            .hero-explainer .tier-2 { animation-delay: 2.8s; }
+            .hero-explainer .tier-3 { animation-delay: 3.1s; }
+            
+            .hero-explainer button:hover {
+                transform: scale(1.05);
+            }
+            
+            /* Mobile responsive adjustments for hero */
+            @media (max-width: 768px) {
+                .hero-explainer {
+                    margin-left: 0 !important;
+                    margin-right: 0 !important;
+                    padding: 30px 15px !important;
+                }
+                .hero-explainer .step {
+                    flex-direction: column !important;
+                    text-align: center !important;
+                }
+                .hero-explainer .step > div:last-child {
+                    text-align: center !important;
+                }
+            }
+            
             @media (max-width: 768px) {
                 /* Mobile styles */
                 .left-panel {
@@ -112,6 +186,132 @@ app.layout = html.Div([
         html.H1("Real Estate - Credit Risk Modelling", 
                 style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '5px', 'marginTop': '10px', 'fontSize': '22px'}),        
     ], className='header-fixed', style={'padding': '10px', 'backgroundColor': '#ecf0f1',  'position': 'fixed', 'top': '0', 'right': '0', 'left': '20%', 'zIndex': '100', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
+    
+    # Animated Hero Explainer Section
+    html.Div([
+        html.H2("How This Works", style={'fontSize': '28px', 'marginBottom': '30px', 'fontWeight': '600'}),
+        
+        html.Div([
+            # Step 1: Investors
+            html.Div([
+                html.Div("👥", style={'fontSize': '48px', 'minWidth': '60px'}),
+                html.Div([
+                    html.H3("1. Investors Pool Capital", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
+                    html.P([
+                        "10 investors contribute ₹1 Crore each = ",
+                        html.Strong("₹10 Crore total")
+                    ], style={'margin': '0', 'fontSize': '14px', 'opacity': '0.9'}),
+                ], style={'textAlign': 'left', 'flex': '1'}),
+            ], className='step step-1', style={
+                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
+                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
+                'borderRadius': '8px', 'marginBottom': '10px'
+            }),
+            
+            html.Div("↓", className='arrow', style={'fontSize': '32px', 'margin': '10px 0'}),
+            
+            # Step 2: Capital Structure
+            html.Div([
+                html.Div("🏦", style={'fontSize': '48px', 'minWidth': '60px'}),
+                html.Div([
+                    html.H3("2. Capital Company Structures Deal", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
+                    html.P([
+                        html.Strong("70% Debt"), " (₹7Cr) + ", html.Strong("30% Sponsor Equity"), " (₹3Cr)"
+                    ], style={'margin': '0', 'fontSize': '14px', 'opacity': '0.9'}),
+                ], style={'textAlign': 'left', 'flex': '1'}),
+            ], className='step step-2', style={
+                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
+                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
+                'borderRadius': '8px', 'marginBottom': '10px'
+            }),
+            
+            html.Div("↓", className='arrow', style={'fontSize': '32px', 'margin': '10px 0'}),
+            
+            # Step 3: Real Estate Projects
+            html.Div([
+                html.Div("🏗️", style={'fontSize': '48px', 'minWidth': '60px'}),
+                html.Div([
+                    html.H3("3. Construction Companies Build", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
+                    html.P([
+                        "10 projects × ₹1Cr each with ", html.Strong("₹2Cr real estate collateral")
+                    ], style={'margin': '0', 'fontSize': '14px', 'opacity': '0.9'}),
+                ], style={'textAlign': 'left', 'flex': '1'}),
+            ], className='step step-3', style={
+                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
+                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
+                'borderRadius': '8px', 'marginBottom': '10px'
+            }),
+            
+            html.Div("↓", className='arrow', style={'fontSize': '32px', 'margin': '10px 0'}),
+            
+            # Step 4: Time Passes
+            html.Div([
+                html.Div("⏳", style={'fontSize': '48px', 'minWidth': '60px'}),
+                html.Div([
+                    html.H3("4. Properties Mature (7 Years)", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
+                    html.Div([
+                        html.Div(className='progress-fill', style={
+                            'height': '100%', 'background': '#4caf50', 'borderRadius': '10px'
+                        }),
+                    ], style={
+                        'width': '100%', 'height': '20px', 'background': 'rgba(255, 255, 255, 0.2)',
+                        'borderRadius': '10px', 'overflow': 'hidden', 'margin': '10px 0'
+                    }),
+                    html.P("Construction → Lease-up → Sale", style={'margin': '0', 'fontSize': '14px', 'opacity': '0.9'}),
+                ], style={'textAlign': 'left', 'flex': '1'}),
+            ], className='step step-4', style={
+                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
+                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
+                'borderRadius': '8px', 'marginBottom': '10px'
+            }),
+            
+            html.Div("↓", className='arrow', style={'fontSize': '32px', 'margin': '10px 0'}),
+            
+            # Step 5: Waterfall Distribution
+            html.Div([
+                html.Div("💰", style={'fontSize': '48px', 'minWidth': '60px'}),
+                html.Div([
+                    html.H3("5. Profits Distributed via Waterfall", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
+                    html.Div([
+                        html.Div([html.Span("Tier 1: ", style={'fontWeight': 'bold'}), "Debt repayment to investors"], 
+                                className='tier tier-1', style={
+                                    'background': 'rgba(255, 255, 255, 0.15)', 'padding': '8px',
+                                    'margin': '5px 0', 'borderRadius': '5px', 'fontSize': '13px'
+                                }),
+                        html.Div([html.Span("Tier 2: ", style={'fontWeight': 'bold'}), "Equity return to sponsors"], 
+                                className='tier tier-2', style={
+                                    'background': 'rgba(255, 255, 255, 0.15)', 'padding': '8px',
+                                    'margin': '5px 0', 'borderRadius': '5px', 'fontSize': '13px'
+                                }),
+                        html.Div([html.Span("Tier 3: ", style={'fontWeight': 'bold'}), "Profit split 80/20 (investors/capital co)"], 
+                                className='tier tier-3', style={
+                                    'background': 'rgba(255, 255, 255, 0.15)', 'padding': '8px',
+                                    'margin': '5px 0', 'borderRadius': '5px', 'fontSize': '13px'
+                                }),
+                    ], style={'marginTop': '10px'}),
+                ], style={'textAlign': 'left', 'flex': '1'}),
+            ], className='step step-5', style={
+                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
+                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
+                'borderRadius': '8px', 'marginBottom': '10px'
+            }),
+        ], style={'maxWidth': '800px', 'margin': '0 auto'}),
+        
+        html.Div([
+            html.Button("Try the Simulation →", id='scroll-to-sim-btn', n_clicks=0, style={
+                'marginTop': '30px', 'padding': '15px 40px', 'fontSize': '18px',
+                'fontWeight': 'bold', 'background': 'white', 'color': '#667eea',
+                'border': 'none', 'borderRadius': '50px', 'cursor': 'pointer',
+                'transition': 'transform 0.3s', 'boxShadow': '0 4px 15px rgba(0,0,0,0.2)'
+            }),
+        ], style={'textAlign': 'center'}),
+        
+    ], className='hero-explainer', style={
+        'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        'color': 'white', 'padding': '40px 20px', 'marginTop': '60px',
+        'marginBottom': '20px', 'borderRadius': '12px', 'textAlign': 'center',
+        'marginLeft': '20%', 'marginRight': '20px'
+    }),
     
     # Main container
     html.Div([
