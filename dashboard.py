@@ -658,9 +658,11 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
     median_irr = np.median(investor_irr)
     p5_irr = np.percentile(investor_irr, 5)
     
-    # Capital company and sponsor stats
-    mean_cc_irr = np.mean(capital_co_irr[capital_co_irr > -0.99])  # Filter failed scenarios
-    mean_sponsor_irr = np.mean(sponsor_irr[sponsor_irr > -0.99])
+    # Capital company and sponsor stats (with safety checks for empty arrays)
+    valid_cc_irr = capital_co_irr[capital_co_irr > -0.99]
+    valid_sponsor_irr = sponsor_irr[sponsor_irr > -0.99]
+    mean_cc_irr = np.mean(valid_cc_irr) if len(valid_cc_irr) > 0 else 0.0
+    mean_sponsor_irr = np.mean(valid_sponsor_irr) if len(valid_sponsor_irr) > 0 else 0.0
     
     # Create figures
     
@@ -823,44 +825,50 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
     
     # 7. Waterfall Distribution Chart (Average Scenario)
     # Simulate one average scenario to show waterfall breakdown
-    avg_sale_price = config.INITIAL_COLLATERAL * config.NUM_PROJECTS * (1 + config.RE_DRIFT) ** config.PROJECT_EXIT_YEAR
+    avg_sale_price = config.INITIAL_COLLATERAL_PER_PROJECT * config.NUM_PROJECTS * (1 + config.RE_DRIFT) ** config.PROJECT_EXIT_YEAR
     debt_owed = calculate_debt_balance_at_exit(config)
     equity_capital = config.TOTAL_CORPUS * config.SPONSOR_EQUITY_PCT
     waterfall = apply_waterfall_distribution(avg_sale_price, debt_owed, equity_capital, config)
     
-    fig_waterfall = go.Figure(go.Waterfall(
-        name="Waterfall",
-        orientation="v",
-        measure=["relative", "relative", "relative", "relative", "total"],
-        x=["Debt Repayment", "Equity Return", "Preferred Return", "Profit Split (80/20)", "Total Distribution"],
-        textposition="outside",
-        text=[
-            f"₹{waterfall['to_debt_holders']/10_000_000:.1f}Cr",
-            f"₹{equity_capital/10_000_000:.1f}Cr",
-            f"₹{max(0, waterfall['to_equity_sponsor'] - equity_capital)/10_000_000:.1f}Cr",
-            f"₹{waterfall['to_capital_company']/10_000_000:.1f}Cr",
-            f"₹{avg_sale_price/10_000_000:.1f}Cr"
-        ],
-        y=[
-            waterfall['to_debt_holders'],
-            equity_capital,
-            max(0, waterfall['to_equity_sponsor'] - equity_capital),
-            waterfall['to_capital_company'],
-            avg_sale_price
-        ],
-        connector={"line": {"color": "rgb(63, 63, 63)"}},
-        decreasing={"marker": {"color": "#e74c3c"}},
-        increasing={"marker": {"color": "#2ecc71"}},
-        totals={"marker": {"color": "#3498db"}}
+    # Calculate waterfall components
+    tier1_debt = waterfall['to_debt_holders']
+    tier2_equity = waterfall['to_equity_sponsor']
+    tier3_preferred = max(0, waterfall['to_equity_sponsor'] - equity_capital) if waterfall['to_equity_sponsor'] > equity_capital else 0
+    tier4_profit = waterfall['to_capital_company']
+    
+    # Use bar chart instead of waterfall for clearer visualization
+    fig_waterfall = go.Figure()
+    
+    categories = ['Debt Holders', 'Equity Sponsor', 'Capital Co (Carry)']
+    values = [tier1_debt / 10_000_000, tier2_equity / 10_000_000, tier4_profit / 10_000_000]
+    colors = ['#3498db', '#16a085', '#8e44ad']
+    
+    fig_waterfall.add_trace(go.Bar(
+        x=categories,
+        y=values,
+        text=[f"₹{v:.2f}Cr" for v in values],
+        textposition='auto',
+        marker_color=colors
     ))
+    
     fig_waterfall.update_layout(
-        title={'text': "Average Exit Sale Waterfall Distribution", 'font': {'size': 16, 'color': '#2c3e50'}},
-        yaxis_title="Amount (₹)",
+        title={'text': "Exit Sale Distribution (Average Scenario)", 'font': {'size': 16, 'color': '#2c3e50'}},
+        xaxis_title="Stakeholder",
+        yaxis_title="Amount (₹ Crore)",
         showlegend=False,
         height=380,
         margin=dict(l=50, r=30, t=50, b=50),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    # Add total sale price as annotation
+    fig_waterfall.add_annotation(
+        x=1,
+        y=max(values) * 1.1,
+        text=f"Total Exit Sale: ₹{avg_sale_price/10_000_000:.1f}Cr",
+        showarrow=False,
+        font=dict(size=12, color='#2c3e50', weight='bold')
     )
     
     # 8. Stakeholder IRR Comparison
@@ -905,13 +913,13 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
                 font=dict(size=10, color='#7f8c8d')
             )
     
-    # Update cards
-    mean_irr_text = f"{mean_irr:.2%}"
-    median_irr_text = f"{median_irr:.2%}"
-    p5_irr_text = f"{p5_irr:.2%}"
-    default_rate_text = f"{default_rate:.1%}"
-    cc_irr_text = f"{mean_cc_irr:.2%}" if mean_cc_irr > -0.99 else "N/A"
-    sponsor_irr_text = f"{mean_sponsor_irr:.2%}" if mean_sponsor_irr > -0.99 else "N/A"
+    # Update cards (with safety checks for valid values)
+    mean_irr_text = f"{mean_irr:.2%}" if not np.isnan(mean_irr) else "N/A"
+    median_irr_text = f"{median_irr:.2%}" if not np.isnan(median_irr) else "N/A"
+    p5_irr_text = f"{p5_irr:.2%}" if not np.isnan(p5_irr) else "N/A"
+    default_rate_text = f"{default_rate:.1%}" if not np.isnan(default_rate) else "N/A"
+    cc_irr_text = f"{mean_cc_irr:.2%}" if mean_cc_irr > 0 else "0.00%"
+    sponsor_irr_text = f"{mean_sponsor_irr:.2%}" if mean_sponsor_irr > 0 else "0.00%"
     cc_fees_text = f"₹{avg_cc_fees['total_revenue'] / 10_000_000:.2f}Cr"
     
     return [
