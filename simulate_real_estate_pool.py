@@ -61,14 +61,20 @@ warnings.filterwarnings('ignore')
 # ============================================================================
 
 class SimulationConfig:
-    """Central configuration for all simulation parameters."""
+    """Central configuration for all simulation parameters - Iteration 2 with Debt+Equity Hybrid."""
     
     # === Pool Structure ===
     TOTAL_CORPUS = 100_000_000  # 10 crore in rupees
     NUM_INVESTORS = 10
     INVESTMENT_PER_INVESTOR = TOTAL_CORPUS / NUM_INVESTORS
     NUM_PROJECTS = 10
-    LOAN_PER_PROJECT = TOTAL_CORPUS / NUM_PROJECTS
+    
+    # === Capital Structure (NEW: Debt + Equity Split) ===
+    INVESTOR_DEBT_PCT = 0.70     # 70% of capital as senior debt
+    SPONSOR_EQUITY_PCT = 0.30    # 30% sponsor equity (skin in the game)
+    DEBT_PER_PROJECT = (TOTAL_CORPUS * INVESTOR_DEBT_PCT) / NUM_PROJECTS  # ₹0.7Cr debt
+    EQUITY_PER_PROJECT = (TOTAL_CORPUS * SPONSOR_EQUITY_PCT) / NUM_PROJECTS  # ₹0.3Cr equity
+    TOTAL_CAPITAL_PER_PROJECT = DEBT_PER_PROJECT + EQUITY_PER_PROJECT  # ₹1Cr total
     
     # === Time Grid ===
     HORIZON_YEARS = 10
@@ -83,9 +89,20 @@ class SimulationConfig:
     FORWARD_RATE_CORR = 0.80     # Correlation between adjacent forward rates
     
     # === Loan Terms ===
-    LOAN_COUPON = 0.12           # 12% annual coupon
+    LOAN_COUPON = 0.10           # 10% annual coupon (reduced from 12% with equity kicker)
     LOAN_MATURITY_YEARS = 10
     AMORTIZATION = False         # False = bullet payment, True = equal amortization
+    
+    # === Project Economics (NEW) ===
+    PROJECT_CONSTRUCTION_YEARS = 3    # Construction phase (no rental income)
+    PROJECT_LEASE_UP_YEARS = 2        # Lease-up phase (ramping occupancy)
+    PROJECT_EXIT_YEAR = 7             # Property sold at year 7
+    STABILIZED_RENTAL_YIELD = 0.06    # 6% rental yield when stabilized
+    OPERATING_EXPENSE_PCT = 0.30      # 30% of rental income goes to OpEx
+    
+    # === Exit Economics (NEW) ===
+    EXIT_SALE_MULTIPLE_MEAN = 1.4     # Average 40% appreciation at exit
+    EXIT_SALE_MULTIPLE_VOL = 0.25     # 25% volatility in exit multiples
     
     # === Collateral (Real Estate) Dynamics ===
     INITIAL_COLLATERAL_PER_PROJECT = 20_000_000  # 2 crore per project (200% collateral coverage)
@@ -105,6 +122,17 @@ class SimulationConfig:
     RECOVERY_RATE = 0.70         # 70% of collateral value recovered
     LIQUIDATION_COST_RATE = 0.05 # 5% liquidation costs
     
+    # === Waterfall Distribution (NEW) ===
+    PROFIT_SHARE_TO_INVESTORS = 0.80   # 80% of profits above debt to LP investors
+    PROFIT_SHARE_TO_GP = 0.20          # 20% of profits to GP (capital company carry)
+    PREFERRED_RETURN_HURDLE = 0.08     # 8% preferred return before profit split
+    
+    # === Capital Company Fees (NEW) ===
+    MANAGEMENT_FEE_RATE = 0.015        # 1.5% annual management fee on AUM
+    PERFORMANCE_FEE_RATE = 0.20        # 20% carry on profits above hurdle
+    PERFORMANCE_HURDLE_IRR = 0.12      # 12% IRR hurdle for performance fee
+    ORIGINATION_FEE_RATE = 0.01        # 1% upfront origination fee from borrower
+    
     # === Monte Carlo ===
     NUM_SIMULATIONS = 5000       # Number of paths (reduce to 500 for quick tests)
     RANDOM_SEED = 42             # For reproducibility
@@ -112,6 +140,12 @@ class SimulationConfig:
     # === Output ===
     OUTPUT_DIR = "simulation_output"
     SAVE_PLOTS = True
+    
+    # === Backward Compatibility (Computed Properties) ===
+    @property
+    def LOAN_PER_PROJECT(self):
+        """Backward compatibility: debt amount per project."""
+        return self.DEBT_PER_PROJECT
 
 
 # ============================================================================
@@ -401,6 +435,273 @@ def generate_loan_cash_flows(
                     break
     
     return pool_cash_flows
+
+
+# ============================================================================
+# ITERATION 2: EXIT SALE & WATERFALL DISTRIBUTION
+# ============================================================================
+
+def simulate_property_exit_sale(
+    collateral_values: np.ndarray,
+    config: SimulationConfig
+) -> np.ndarray:
+    """
+    Simulate property sale at exit year with stochastic exit multiples.
+    
+    Parameters:
+    -----------
+    collateral_values : np.ndarray of shape (num_sims, num_steps+1, num_projects)
+    config : SimulationConfig
+    
+    Returns:
+    --------
+    exit_sale_prices : np.ndarray of shape (num_sims, num_projects)
+        Sale price for each project in each simulation
+    """
+    num_sims, _, num_projects = collateral_values.shape
+    exit_step = min(config.PROJECT_EXIT_YEAR * config.TIME_STEPS_PER_YEAR, config.NUM_STEPS)
+    
+    # Base property values at exit year
+    base_values = collateral_values[:, exit_step, :]
+    
+    # Apply stochastic exit multiples (lognormal distribution)
+    # Mean and variance adjustment for lognormal
+    log_mean = np.log(config.EXIT_SALE_MULTIPLE_MEAN) - 0.5 * config.EXIT_SALE_MULTIPLE_VOL**2
+    log_std = config.EXIT_SALE_MULTIPLE_VOL
+    
+    exit_multiples = np.random.lognormal(log_mean, log_std, size=(num_sims, num_projects))
+    exit_sale_prices = base_values * exit_multiples
+    
+    return exit_sale_prices
+
+
+def calculate_debt_balance_at_exit(
+    config: SimulationConfig
+) -> float:
+    """
+    Calculate total debt owed at exit (principal + accrued interest).
+    
+    For simplicity, assumes interest-only payments during construction,
+    then full repayment at exit.
+    """
+    debt_principal = config.DEBT_PER_PROJECT
+    years_to_exit = config.PROJECT_EXIT_YEAR
+    accrued_interest = debt_principal * config.LOAN_COUPON * years_to_exit
+    
+    # Total debt owed = principal + cumulative interest
+    # (In reality, some interest would be paid quarterly/annually)
+    total_debt_owed = debt_principal + accrued_interest
+    
+    return total_debt_owed
+
+
+def apply_waterfall_distribution(
+    sale_price: float,
+    debt_owed: float,
+    equity_capital: float,
+    config: SimulationConfig
+) -> Dict[str, float]:
+    """
+    Apply waterfall distribution to property sale proceeds.
+    
+    WATERFALL TIERS:
+    ----------------
+    Tier 1: Debt Repayment (principal + accrued interest)
+    Tier 2: Return of Equity Capital (sponsor's original equity)
+    Tier 3: Preferred Return (if any unpaid preferred return to investors)
+    Tier 4: Profit Split (remaining profits split per config)
+            - 80% to LP investors (profit share)
+            - 20% to GP/Capital Company (carried interest)
+    
+    Parameters:
+    -----------
+    sale_price : float - Gross sale proceeds from property
+    debt_owed : float - Total debt principal + accrued interest
+    equity_capital : float - Original sponsor equity invested
+    config : SimulationConfig
+    
+    Returns:
+    --------
+    distribution : dict with keys:
+        - 'to_debt_holders': Amount to investors (debt + profit share)
+        - 'to_equity_sponsor': Amount to construction company
+        - 'to_capital_company': GP carry from profits
+        - 'total_profit': Total profit above capital
+    """
+    remaining = sale_price
+    distribution = {
+        'to_debt_holders': 0.0,
+        'to_equity_sponsor': 0.0,
+        'to_capital_company': 0.0,
+        'total_profit': 0.0
+    }
+    
+    # Tier 1: Repay Debt (principal + interest)
+    debt_repayment = min(remaining, debt_owed)
+    distribution['to_debt_holders'] += debt_repayment
+    remaining -= debt_repayment
+    
+    if remaining <= 0:
+        return distribution  # No money left for equity or profits
+    
+    # Tier 2: Return Equity Capital to Sponsor
+    equity_return = min(remaining, equity_capital)
+    distribution['to_equity_sponsor'] += equity_return
+    remaining -= equity_return
+    
+    if remaining <= 0:
+        return distribution  # No profits to distribute
+    
+    # Tier 3: Preferred Return (simplified: assumed covered by interest payments)
+    # In a more complex model, track if preferred return has been fully paid
+    # For now, skip this tier as interest payments cover preferred return
+    
+    # Tier 4: Profit Split (remaining = pure profit above all capital)
+    total_profit = remaining
+    distribution['total_profit'] = total_profit
+    
+    lp_profit_share = total_profit * config.PROFIT_SHARE_TO_INVESTORS
+    gp_carry = total_profit * config.PROFIT_SHARE_TO_GP
+    
+    distribution['to_debt_holders'] += lp_profit_share
+    distribution['to_capital_company'] += gp_carry
+    
+    return distribution
+
+
+def calculate_capital_company_fees(
+    aum: float,
+    years: int,
+    total_profits: float,
+    investor_irr: float,
+    config: SimulationConfig
+) -> Dict[str, float]:
+    """
+    Calculate capital company revenue from fees and carry.
+    
+    REVENUE STREAMS:
+    ----------------
+    1. Management Fees: Annual fee on AUM (1.5%)
+    2. Performance Fees (Carry): 20% of profits above hurdle IRR
+    3. Origination Fees: Upfront fee from borrowers (1%)
+    
+    Parameters:
+    -----------
+    aum : float - Assets under management (total corpus)
+    years : int - Number of years
+    total_profits : float - Total profits from all projects
+    investor_irr : float - Achieved IRR for investors
+    config : SimulationConfig
+    
+    Returns:
+    --------
+    fees : dict with breakdown of capital company revenue
+    """
+    # Management fees (annual, charged on AUM)
+    annual_mgmt_fee = aum * config.MANAGEMENT_FEE_RATE
+    total_mgmt_fees = annual_mgmt_fee * years
+    
+    # Performance fees (carry) - only if IRR exceeds hurdle
+    if investor_irr >= config.PERFORMANCE_HURDLE_IRR:
+        performance_fee = total_profits * config.PERFORMANCE_FEE_RATE
+    else:
+        performance_fee = 0.0
+    
+    # Origination fees (upfront, charged to borrowers)
+    origination_fees = aum * config.ORIGINATION_FEE_RATE
+    
+    total_revenue = total_mgmt_fees + performance_fee + origination_fees
+    
+    return {
+        'management_fees': total_mgmt_fees,
+        'performance_fee': performance_fee,
+        'origination_fees': origination_fees,
+        'total_revenue': total_revenue
+    }
+
+
+def generate_cash_flows_with_exit(
+    collateral_values: np.ndarray,
+    default_indicator: np.ndarray,
+    default_time: np.ndarray,
+    config: SimulationConfig,
+    num_sims: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Generate cash flows with exit sale and waterfall distribution - ITERATION 2.
+    
+    Returns cash flows for:
+    1. Investors (debt holders + profit share)
+    2. Capital Company (carry from profits)
+    3. Sponsors (equity return)
+    
+    Parameters:
+    -----------
+    collateral_values : np.ndarray
+    default_indicator : np.ndarray
+    default_time : np.ndarray
+    config : SimulationConfig
+    num_sims : int
+    
+    Returns:
+    --------
+    investor_cash_flows : np.ndarray (num_sims, num_steps+1)
+    capital_company_cash_flows : np.ndarray (num_sims, num_steps+1)
+    sponsor_cash_flows : np.ndarray (num_sims, num_steps+1)
+    """
+    num_steps = config.NUM_STEPS
+    num_projects = config.NUM_PROJECTS
+    exit_step = min(config.PROJECT_EXIT_YEAR * config.TIME_STEPS_PER_YEAR, num_steps)
+    
+    investor_cf = np.zeros((num_sims, num_steps + 1))
+    capital_company_cf = np.zeros((num_sims, num_steps + 1))
+    sponsor_cf = np.zeros((num_sims, num_steps + 1))
+    
+    debt_per_project = config.DEBT_PER_PROJECT
+    equity_per_project = config.EQUITY_PER_PROJECT
+    annual_coupon = debt_per_project * config.LOAN_COUPON
+    
+    # Simulate exit sale prices
+    exit_sale_prices = simulate_property_exit_sale(collateral_values, config)
+    
+    for sim in range(num_sims):
+        for proj in range(num_projects):
+            default_step = default_time[sim, proj]
+            
+            if default_step <= exit_step:
+                # DEFAULT SCENARIO
+                for step in range(1, int(default_step) + 1):
+                    if step < default_step and step % config.TIME_STEPS_PER_YEAR == 0:
+                        investor_cf[sim, step] += annual_coupon
+                    elif step == default_step:
+                        collateral_at_default = collateral_values[sim, step, proj]
+                        recovery = compute_recovery_value(collateral_at_default, config)
+                        investor_cf[sim, step] += recovery
+                        break
+            else:
+                # EXIT SALE SCENARIO
+                # Coupon payments until exit
+                for step in range(1, exit_step + 1):
+                    if step % config.TIME_STEPS_PER_YEAR == 0:
+                        investor_cf[sim, step] += annual_coupon
+                
+                # Apply waterfall at exit
+                sale_price = exit_sale_prices[sim, proj]
+                debt_owed = calculate_debt_balance_at_exit(config)
+                
+                waterfall = apply_waterfall_distribution(
+                    sale_price=sale_price,
+                    debt_owed=debt_owed,
+                    equity_capital=equity_per_project,
+                    config=config
+                )
+                
+                # Distribute proceeds
+                investor_cf[sim, exit_step] += waterfall['to_debt_holders']
+                capital_company_cf[sim, exit_step] += waterfall['to_capital_company']
+                sponsor_cf[sim, exit_step] += waterfall['to_equity_sponsor']
+    
+    return investor_cf, capital_company_cf, sponsor_cf
 
 
 # ============================================================================
