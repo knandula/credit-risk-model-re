@@ -287,7 +287,7 @@ app.index_string = '''
 app.layout = html.Div([
     # Header
     html.Div([
-        html.H1("Real Estate - Credit Risk Modelling", 
+        html.H1("Real Estate Capital Structure Simulator", 
                 style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '5px', 'marginTop': '10px', 'fontSize': '22px'}),        
     ], className='header-fixed', style={'padding': '10px', 'backgroundColor': '#ecf0f1',  'position': 'fixed', 'top': '0', 'right': '0', 'left': '20%', 'zIndex': '100', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
     
@@ -465,7 +465,7 @@ app.layout = html.Div([
         # Right Panel - Visualizations
         html.Div(className='right-panel', children=[
             # Spacer for fixed header
-            html.Div(style={'height': '70px'}),
+            html.Div(style={'height': '70px'}),          
             
             # Summary Statistics Cards - Row 1 (Investor Metrics)
             html.Div([
