@@ -30,6 +30,8 @@ from simulate_real_estate_pool import (
     compute_investor_irr,
     compute_investor_npv,
     calculate_capital_company_fees,
+    calculate_debt_balance_at_exit,
+    apply_waterfall_distribution,
 )
 
 # Initialize Dash app
@@ -287,13 +289,13 @@ app.layout = html.Div([
             # Spacer for fixed header
             html.Div(style={'height': '70px'}),
             
-            # Summary Statistics Cards
+            # Summary Statistics Cards - Row 1 (Investor Metrics)
             html.Div([
                 html.Div([
-                    html.H4("Mean IRR", style={'color': '#7f8c8d', 'marginBottom': '5px', 'fontSize': '13px'}),
+                    html.H4("Investor Mean IRR", style={'color': '#7f8c8d', 'marginBottom': '5px', 'fontSize': '13px'}),
                     html.H2(id='mean-irr-card', children="--", 
                            style={'color': '#2980b9', 'marginTop': '0', 'marginBottom': '5px', 'fontSize': '24px'}),
-                    html.P("Average expected return across all scenarios", 
+                    html.P("Average investor return across all scenarios", 
                            style={'fontSize': '10px', 'color': '#95a5a6', 'margin': '0', 'lineHeight': '1.3'}),
                 ], className='stat-card', style={
                     'flex': '1',
@@ -345,6 +347,59 @@ app.layout = html.Div([
                     html.H2(id='default-rate-card', children="--",
                            style={'color': '#e67e22', 'marginTop': '0', 'marginBottom': '5px', 'fontSize': '24px'}),
                     html.P("% of loans that fail to repay fully", 
+                           style={'fontSize': '10px', 'color': '#95a5a6', 'margin': '0', 'lineHeight': '1.3'}),
+                ], className='stat-card', style={
+                    'flex': '1',
+                    'minWidth': '150px',
+                    'padding': '15px',
+                    'backgroundColor': 'white',
+                    'borderRadius': '8px',
+                    'boxShadow': '0 4px 6px rgba(0,0,0,0.1)',
+                    'textAlign': 'center'
+                }),
+            ], style={'display': 'flex', 'flexWrap': 'wrap', 'marginBottom': '15px', 'gap': '0'}),
+            
+            # Summary Statistics Cards - Row 2 (Capital Company & Sponsor Metrics)
+            html.Div([
+                html.Div([
+                    html.H4("Capital Co IRR", style={'color': '#7f8c8d', 'marginBottom': '5px', 'fontSize': '13px'}),
+                    html.H2(id='cc-irr-card', children="--", 
+                           style={'color': '#8e44ad', 'marginTop': '0', 'marginBottom': '5px', 'fontSize': '24px'}),
+                    html.P("Capital company return from fees & carry", 
+                           style={'fontSize': '10px', 'color': '#95a5a6', 'margin': '0', 'lineHeight': '1.3'}),
+                ], className='stat-card', style={
+                    'flex': '1',
+                    'minWidth': '150px',
+                    'padding': '15px',
+                    'backgroundColor': 'white',
+                    'borderRadius': '8px',
+                    'boxShadow': '0 4px 6px rgba(0,0,0,0.1)',
+                    'textAlign': 'center',
+                    'marginRight': '15px'
+                }),
+                
+                html.Div([
+                    html.H4("Sponsor IRR", style={'color': '#7f8c8d', 'marginBottom': '5px', 'fontSize': '13px'}),
+                    html.H2(id='sponsor-irr-card', children="--",
+                           style={'color': '#16a085', 'marginTop': '0', 'marginBottom': '5px', 'fontSize': '24px'}),
+                    html.P("Equity sponsor return on 30% investment", 
+                           style={'fontSize': '10px', 'color': '#95a5a6', 'margin': '0', 'lineHeight': '1.3'}),
+                ], className='stat-card', style={
+                    'flex': '1',
+                    'minWidth': '150px',
+                    'padding': '15px',
+                    'backgroundColor': 'white',
+                    'borderRadius': '8px',
+                    'boxShadow': '0 4px 6px rgba(0,0,0,0.1)',
+                    'textAlign': 'center',
+                    'marginRight': '15px'
+                }),
+                
+                html.Div([
+                    html.H4("Avg CC Fees", style={'color': '#7f8c8d', 'marginBottom': '5px', 'fontSize': '13px'}),
+                    html.H2(id='cc-fees-card', children="--",
+                           style={'color': '#d35400', 'marginTop': '0', 'marginBottom': '5px', 'fontSize': '24px'}),
+                    html.P("Mgmt + performance + origination fees", 
                            style={'fontSize': '10px', 'color': '#95a5a6', 'margin': '0', 'lineHeight': '1.3'}),
                 ], className='stat-card', style={
                     'flex': '1',
@@ -447,6 +502,36 @@ app.layout = html.Div([
                 }),
             ], style={'display': 'flex', 'flexWrap': 'wrap', 'marginBottom': '15px', 'gap': '0'}),
             
+            # Charts row 4 - Iteration 2 Metrics
+            html.Div([
+                html.Div([
+                    dcc.Graph(id='waterfall-chart', style={'height': '380px'}),
+                    html.P("Waterfall distribution showing how exit sale proceeds are allocated across four tiers: (1) Debt repayment to investors, (2) Return of equity capital to sponsor, (3) Preferred return to investors/sponsor, (4) Profit split between investors (80%) and capital company (20%). This visualizes the priority structure of cash flows at property exit.",
+                          style={'fontSize': '11px', 'color': '#7f8c8d', 'marginTop': '10px', 'lineHeight': '1.5'})
+                ], className='chart-container', style={
+                    'flex': '1',
+                    'minWidth': '400px',
+                    'marginRight': '15px',
+                    'backgroundColor': 'white',
+                    'borderRadius': '8px',
+                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                    'padding': '10px'
+                }),
+                
+                html.Div([
+                    dcc.Graph(id='stakeholder-comparison', style={'height': '380px'}),
+                    html.P("Comparison of returns across all three stakeholders in the deal structure. Investors (70% debt) earn coupon + exit proceeds, Capital Company earns management fees + performance carry, Sponsor (30% equity) earns residual profits after debt repayment. This shows how value is created and distributed across the ecosystem.",
+                          style={'fontSize': '11px', 'color': '#7f8c8d', 'marginTop': '10px', 'lineHeight': '1.5'})
+                ], className='chart-container', style={
+                    'flex': '1',
+                    'minWidth': '400px',
+                    'backgroundColor': 'white',
+                    'borderRadius': '8px',
+                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                    'padding': '10px'
+                }),
+            ], style={'display': 'flex', 'flexWrap': 'wrap', 'marginBottom': '15px', 'gap': '0'}),
+            
         ], style={
             'width': '80%',
             'display': 'inline-block',
@@ -474,12 +559,17 @@ app.layout = html.Div([
         Output('median-irr-card', 'children'),
         Output('percentile5-card', 'children'),
         Output('default-rate-card', 'children'),
+        Output('cc-irr-card', 'children'),
+        Output('sponsor-irr-card', 'children'),
+        Output('cc-fees-card', 'children'),
         Output('irr-histogram', 'figure'),
         Output('irr-cdf', 'figure'),
         Output('collateral-paths', 'figure'),
         Output('cash-flows', 'figure'),
         Output('irr-boxplot', 'figure'),
         Output('scenario-comparison', 'figure'),
+        Output('waterfall-chart', 'figure'),
+        Output('stakeholder-comparison', 'figure'),
         Output('loading-output', 'children'),
     ],
     Input('run-button', 'n_clicks'),
@@ -731,23 +821,115 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
         paper_bgcolor='rgba(0,0,0,0)'
     )
     
+    # 7. Waterfall Distribution Chart (Average Scenario)
+    # Simulate one average scenario to show waterfall breakdown
+    avg_sale_price = config.INITIAL_COLLATERAL * config.NUM_PROJECTS * (1 + config.RE_DRIFT) ** config.PROJECT_EXIT_YEAR
+    debt_owed = calculate_debt_balance_at_exit(config)
+    equity_capital = config.TOTAL_CORPUS * config.SPONSOR_EQUITY_PCT
+    waterfall = apply_waterfall_distribution(avg_sale_price, debt_owed, equity_capital, config)
+    
+    fig_waterfall = go.Figure(go.Waterfall(
+        name="Waterfall",
+        orientation="v",
+        measure=["relative", "relative", "relative", "relative", "total"],
+        x=["Debt Repayment", "Equity Return", "Preferred Return", "Profit Split (80/20)", "Total Distribution"],
+        textposition="outside",
+        text=[
+            f"₹{waterfall['to_debt_holders']/10_000_000:.1f}Cr",
+            f"₹{equity_capital/10_000_000:.1f}Cr",
+            f"₹{max(0, waterfall['to_equity_sponsor'] - equity_capital)/10_000_000:.1f}Cr",
+            f"₹{waterfall['to_capital_company']/10_000_000:.1f}Cr",
+            f"₹{avg_sale_price/10_000_000:.1f}Cr"
+        ],
+        y=[
+            waterfall['to_debt_holders'],
+            equity_capital,
+            max(0, waterfall['to_equity_sponsor'] - equity_capital),
+            waterfall['to_capital_company'],
+            avg_sale_price
+        ],
+        connector={"line": {"color": "rgb(63, 63, 63)"}},
+        decreasing={"marker": {"color": "#e74c3c"}},
+        increasing={"marker": {"color": "#2ecc71"}},
+        totals={"marker": {"color": "#3498db"}}
+    ))
+    fig_waterfall.update_layout(
+        title={'text': "Average Exit Sale Waterfall Distribution", 'font': {'size': 16, 'color': '#2c3e50'}},
+        yaxis_title="Amount (₹)",
+        showlegend=False,
+        height=380,
+        margin=dict(l=50, r=30, t=50, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    # 8. Stakeholder IRR Comparison
+    stakeholder_data = {
+        'Stakeholder': ['Investors (Debt)', 'Capital Company', 'Sponsor (Equity)'],
+        'Mean IRR': [mean_irr * 100, mean_cc_irr * 100, mean_sponsor_irr * 100],
+        'Investment': [
+            config.TOTAL_CORPUS * config.INVESTOR_DEBT_PCT / 10_000_000,
+            0,  # Capital company invests time/effort, not capital
+            config.TOTAL_CORPUS * config.SPONSOR_EQUITY_PCT / 10_000_000
+        ]
+    }
+    
+    fig_stakeholder = go.Figure()
+    fig_stakeholder.add_trace(go.Bar(
+        name='Mean IRR',
+        x=stakeholder_data['Stakeholder'],
+        y=stakeholder_data['Mean IRR'],
+        text=[f"{v:.1f}%" for v in stakeholder_data['Mean IRR']],
+        textposition='auto',
+        marker_color=['#2980b9', '#8e44ad', '#16a085']
+    ))
+    fig_stakeholder.update_layout(
+        title={'text': "Stakeholder Returns Comparison", 'font': {'size': 16, 'color': '#2c3e50'}},
+        xaxis_title="Stakeholder",
+        yaxis_title="IRR (%)",
+        showlegend=False,
+        height=380,
+        margin=dict(l=50, r=30, t=50, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+    
+    # Add investment size annotations
+    for i, (stakeholder, investment) in enumerate(zip(stakeholder_data['Stakeholder'], stakeholder_data['Investment'])):
+        if investment > 0:
+            fig_stakeholder.add_annotation(
+                x=i,
+                y=-5,
+                text=f"₹{investment:.1f}Cr",
+                showarrow=False,
+                font=dict(size=10, color='#7f8c8d')
+            )
+    
     # Update cards
     mean_irr_text = f"{mean_irr:.2%}"
     median_irr_text = f"{median_irr:.2%}"
     p5_irr_text = f"{p5_irr:.2%}"
     default_rate_text = f"{default_rate:.1%}"
+    cc_irr_text = f"{mean_cc_irr:.2%}" if mean_cc_irr > -0.99 else "N/A"
+    sponsor_irr_text = f"{mean_sponsor_irr:.2%}" if mean_sponsor_irr > -0.99 else "N/A"
+    cc_fees_text = f"₹{avg_cc_fees['total_revenue'] / 10_000_000:.2f}Cr"
     
     return [
         mean_irr_text,
         median_irr_text,
         p5_irr_text,
         default_rate_text,
+        cc_irr_text,
+        sponsor_irr_text,
+        cc_fees_text,
         fig_hist,
         fig_cdf,
         fig_collateral,
         fig_cf,
         fig_box,
         fig_buckets,
+        fig_waterfall,
+        fig_stakeholder,
         ""
     ]
 
