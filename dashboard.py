@@ -52,16 +52,28 @@ app.index_string = '''
         {%favicon%}
         {%css%}
         <style>
-            /* Mind Map Animations */
+            /* Mind Map Animations - Infinite Loop */
             @keyframes popIn {
                 0% { opacity: 0; transform: scale(0.3); }
                 50% { transform: scale(1.1); }
                 100% { opacity: 1; transform: scale(1); }
             }
             
+            @keyframes popInCenter {
+                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+                50% { transform: translate(-50%, -50%) scale(1.1); }
+                100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            }
+            
+            @keyframes popInBottom {
+                0% { opacity: 0; transform: translateX(-50%) scale(0.3); }
+                50% { transform: translateX(-50%) scale(1.1); }
+                100% { opacity: 1; transform: translateX(-50%) scale(1); }
+            }
+            
             @keyframes pulse {
-                0%, 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-                50% { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+                0%, 100% { box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+                50% { box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
             }
             
             @keyframes drawLine {
@@ -76,97 +88,125 @@ app.index_string = '''
             
             @keyframes glow {
                 0%, 100% { box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-                50% { box-shadow: 0 8px 30px rgba(255,255,255,0.4); }
+                50% { box-shadow: 0 8px 30px rgba(76,175,80,0.6); }
             }
             
-            /* Center node - appears first with pulse */
+            @keyframes infiniteLoop {
+                0% { opacity: 1; transform: scale(1); }
+                5% { opacity: 0; transform: scale(0.3); }
+                10% { opacity: 0; transform: scale(0.3); }
+                15% { opacity: 1; transform: scale(1.1); }
+                20% { opacity: 1; transform: scale(1); }
+                100% { opacity: 1; transform: scale(1); }
+            }
+            
+            @keyframes infiniteLoopCenter {
+                0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                5% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+                10% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+                15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+                20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            }
+            
+            @keyframes infiniteLoopBottom {
+                0% { opacity: 1; transform: translateX(-50%) scale(1); }
+                5% { opacity: 0; transform: translateX(-50%) scale(0.3); }
+                10% { opacity: 0; transform: translateX(-50%) scale(0.3); }
+                15% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+                20% { opacity: 1; transform: translateX(-50%) scale(1); }
+                100% { opacity: 1; transform: translateX(-50%) scale(1); }
+            }
+            
+            /* Center node - continuous pulse */
             .mind-map-node.center-node {
-                animation: popIn 0.8s ease-out 0.3s forwards, pulse 2s ease-in-out 1.5s infinite;
-                opacity: 0;
+                animation: popInCenter 0.8s ease-out 0.3s forwards, 
+                           infiniteLoopCenter 15s ease-in-out 3s infinite,
+                           pulse 2s ease-in-out 1.5s infinite;
             }
             
-            /* Investor and Sponsor nodes - appear from top */
+            /* Investor and Sponsor nodes - infinite loop */
             .mind-map-node.investor-node {
-                animation: popIn 0.8s ease-out 0.8s forwards;
-                opacity: 0;
+                animation: popIn 0.8s ease-out 0.8s forwards,
+                           infiniteLoop 15s ease-in-out 4s infinite;
             }
             
             .mind-map-node.sponsor-node {
-                animation: popIn 0.8s ease-out 1s forwards;
-                opacity: 0;
+                animation: popIn 0.8s ease-out 1s forwards,
+                           infiniteLoop 15s ease-in-out 4.2s infinite;
             }
             
-            /* Projects node - appears from bottom */
+            /* Projects node */
             .mind-map-node.project-node {
-                animation: popIn 0.8s ease-out 1.2s forwards;
-                opacity: 0;
+                animation: popInBottom 0.8s ease-out 1.2s forwards,
+                           infiniteLoopBottom 15s ease-in-out 4.5s infinite;
             }
             
-            /* Return nodes - appear last with glow */
+            /* Return nodes - with glow */
             .mind-map-node.return-investor-node {
-                animation: popIn 0.8s ease-out 1.8s forwards, glow 3s ease-in-out 2.5s infinite;
-                opacity: 0;
+                animation: popIn 0.8s ease-out 1.8s forwards,
+                           infiniteLoop 15s ease-in-out 5.5s infinite,
+                           glow 3s ease-in-out 2.5s infinite;
             }
             
             .mind-map-node.return-sponsor-node {
-                animation: popIn 0.8s ease-out 2s forwards, glow 3s ease-in-out 2.5s infinite;
-                opacity: 0;
+                animation: popIn 0.8s ease-out 2s forwards,
+                           infiniteLoop 15s ease-in-out 5.7s infinite,
+                           glow 3s ease-in-out 2.7s infinite;
             }
             
             /* Cap co fees node */
             .mind-map-node.capco-fees-node {
-                animation: popIn 0.8s ease-out 1.5s forwards;
-                opacity: 0;
+                animation: popInBottom 0.8s ease-out 1.5s forwards,
+                           infiniteLoopBottom 15s ease-in-out 5s infinite;
             }
             
-            /* Connection lines animate drawing */
+            /* Connection lines - infinite redraw */
+            .connection-line {
+                animation-iteration-count: infinite !important;
+            }
+            
             .connection-line.line-to-investors {
-                animation: drawLine 0.6s ease-out 0.9s forwards;
-                height: 0;
-                opacity: 0;
+                animation: drawLine 0.6s ease-out 0.9s forwards,
+                           drawLine 1s ease-in-out 18s infinite;
             }
             
             .connection-line.line-to-sponsors {
-                animation: drawLine 0.6s ease-out 1.1s forwards;
-                height: 0;
-                opacity: 0;
+                animation: drawLine 0.6s ease-out 1.1s forwards,
+                           drawLine 1s ease-in-out 18.2s infinite;
             }
             
             .connection-line.line-to-construction {
-                animation: drawLine 0.6s ease-out 1.3s forwards;
-                height: 0;
-                opacity: 0;
+                animation: drawLine 0.6s ease-out 1.3s forwards,
+                           drawLine 1s ease-in-out 18.5s infinite;
             }
             
             .connection-line.line-to-investors-return {
-                animation: drawLineShort 0.6s ease-out 1.9s forwards;
-                height: 0;
-                opacity: 0;
+                animation: drawLineShort 0.6s ease-out 1.9s forwards,
+                           drawLineShort 1s ease-in-out 19.5s infinite;
             }
             
             .connection-line.line-to-sponsors-return {
-                animation: drawLineShort 0.6s ease-out 2.1s forwards;
-                height: 0;
-                opacity: 0;
+                animation: drawLineShort 0.6s ease-out 2.1s forwards,
+                           drawLineShort 1s ease-in-out 19.7s infinite;
             }
             
-            /* Hover effects */
-            .mind-map-node:hover {
+            /* Hover effects - preserve transforms */
+            .mind-map-node:not(.center-node):not(.project-node):not(.capco-fees-node):hover {
                 transform: scale(1.15) !important;
                 box-shadow: 0 12px 35px rgba(255,255,255,0.3) !important;
                 z-index: 20 !important;
             }
             
             .mind-map-node.center-node:hover {
-                transform: translate(-50%, -50%) scale(1.15) !important;
+                box-shadow: 0 12px 35px rgba(255,255,255,0.3) !important;
+                z-index: 20 !important;
             }
             
-            .mind-map-node.project-node:hover {
-                transform: translateX(-50%) scale(1.15) !important;
-            }
-            
+            .mind-map-node.project-node:hover,
             .mind-map-node.capco-fees-node:hover {
-                transform: translateX(-50%) scale(1.15) !important;
+                box-shadow: 0 12px 35px rgba(255,255,255,0.3) !important;
+                z-index: 20 !important;
             }
             
             .hero-explainer button:hover {
@@ -250,182 +290,6 @@ app.layout = html.Div([
         html.H1("Real Estate - Credit Risk Modelling", 
                 style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '5px', 'marginTop': '10px', 'fontSize': '22px'}),        
     ], className='header-fixed', style={'padding': '10px', 'backgroundColor': '#ecf0f1',  'position': 'fixed', 'top': '0', 'right': '0', 'left': '20%', 'zIndex': '100', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
-    
-    # Interactive Mind Map Explainer
-    html.Div([
-        html.H2("Real Estate Credit Model - Interactive Flow", style={
-            'fontSize': '28px', 'marginBottom': '10px', 'fontWeight': '600'
-        }),
-        html.P("Hover over each node to see details", style={
-            'fontSize': '14px', 'opacity': '0.8', 'marginBottom': '30px'
-        }),
-        
-        # SVG Mind Map Container
-        html.Div([
-            # Center Hub - Capital Company
-            html.Div([
-                html.Div("🏦", style={'fontSize': '36px', 'marginBottom': '5px'}),
-                html.Div("Capital Company", style={'fontWeight': 'bold', 'fontSize': '14px'}),
-                html.Div("Orchestrates Deal", style={'fontSize': '11px', 'opacity': '0.8'}),
-            ], className='mind-map-node center-node', style={
-                'position': 'absolute', 'left': '50%', 'top': '50%',
-                'transform': 'translate(-50%, -50%)',
-                'background': 'rgba(255, 255, 255, 0.95)', 'color': '#667eea',
-                'padding': '25px 30px', 'borderRadius': '50%',
-                'boxShadow': '0 8px 25px rgba(0,0,0,0.3)',
-                'textAlign': 'center', 'zIndex': '10',
-                'cursor': 'pointer', 'transition': 'all 0.3s',
-                'minWidth': '140px', 'minHeight': '140px',
-                'display': 'flex', 'flexDirection': 'column',
-                'justifyContent': 'center', 'alignItems': 'center'
-            }),
-            
-            # Connecting Lines (animated)
-            html.Div(className='connection-line line-to-investors', style={
-                'position': 'absolute', 'left': '35%', 'top': '25%',
-                'width': '2px', 'height': '80px', 'background': 'rgba(255,255,255,0.5)',
-                'transformOrigin': 'bottom', 'transform': 'rotate(-45deg)'
-            }),
-            html.Div(className='connection-line line-to-sponsors', style={
-                'position': 'absolute', 'right': '35%', 'top': '25%',
-                'width': '2px', 'height': '80px', 'background': 'rgba(255,255,255,0.5)',
-                'transformOrigin': 'bottom', 'transform': 'rotate(45deg)'
-            }),
-            html.Div(className='connection-line line-to-construction', style={
-                'position': 'absolute', 'left': '50%', 'top': '60%',
-                'width': '2px', 'height': '80px', 'background': 'rgba(255,255,255,0.5)',
-                'transformOrigin': 'top'
-            }),
-            html.Div(className='connection-line line-to-investors-return', style={
-                'position': 'absolute', 'left': '30%', 'bottom': '20%',
-                'width': '2px', 'height': '70px', 'background': 'rgba(76,175,80,0.6)',
-                'transformOrigin': 'top', 'transform': 'rotate(-30deg)'
-            }),
-            html.Div(className='connection-line line-to-sponsors-return', style={
-                'position': 'absolute', 'right': '30%', 'bottom': '20%',
-                'width': '2px', 'height': '70px', 'background': 'rgba(76,175,80,0.6)',
-                'transformOrigin': 'top', 'transform': 'rotate(30deg)'
-            }),
-            
-            # Top Left - Investors
-            html.Div([
-                html.Div("👥", style={'fontSize': '32px', 'marginBottom': '5px'}),
-                html.Div("10 Investors", style={'fontWeight': 'bold', 'fontSize': '13px'}),
-                html.Div("₹1Cr each", style={'fontSize': '11px', 'opacity': '0.8', 'marginTop': '3px'}),
-                html.Div("= ₹10Cr Total", style={'fontSize': '12px', 'color': '#4caf50', 'marginTop': '3px', 'fontWeight': 'bold'}),
-                html.Div("70% as Debt", style={'fontSize': '10px', 'background': 'rgba(52,152,219,0.2)', 'padding': '3px 8px', 'borderRadius': '10px', 'marginTop': '5px'}),
-            ], className='mind-map-node investor-node', style={
-                'position': 'absolute', 'left': '10%', 'top': '8%',
-                'background': 'rgba(255, 255, 255, 0.15)', 'color': 'white',
-                'padding': '20px', 'borderRadius': '15px',
-                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
-                'textAlign': 'center', 'cursor': 'pointer',
-                'transition': 'all 0.3s', 'border': '2px solid rgba(255,255,255,0.3)'
-            }),
-            
-            # Top Right - Sponsors
-            html.Div([
-                html.Div("🏗️", style={'fontSize': '32px', 'marginBottom': '5px'}),
-                html.Div("Sponsors", style={'fontWeight': 'bold', 'fontSize': '13px'}),
-                html.Div("Construction Cos", style={'fontSize': '11px', 'opacity': '0.8', 'marginTop': '3px'}),
-                html.Div("₹3Cr Equity", style={'fontSize': '12px', 'color': '#16a085', 'marginTop': '3px', 'fontWeight': 'bold'}),
-                html.Div("30% Skin in Game", style={'fontSize': '10px', 'background': 'rgba(22,160,133,0.3)', 'padding': '3px 8px', 'borderRadius': '10px', 'marginTop': '5px'}),
-            ], className='mind-map-node sponsor-node', style={
-                'position': 'absolute', 'right': '10%', 'top': '8%',
-                'background': 'rgba(255, 255, 255, 0.15)', 'color': 'white',
-                'padding': '20px', 'borderRadius': '15px',
-                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
-                'textAlign': 'center', 'cursor': 'pointer',
-                'transition': 'all 0.3s', 'border': '2px solid rgba(255,255,255,0.3)'
-            }),
-            
-            # Bottom - Real Estate Projects
-            html.Div([
-                html.Div("🏘️", style={'fontSize': '32px', 'marginBottom': '5px'}),
-                html.Div("10 RE Projects", style={'fontWeight': 'bold', 'fontSize': '13px'}),
-                html.Div("₹1Cr per project", style={'fontSize': '11px', 'opacity': '0.8', 'marginTop': '3px'}),
-                html.Div("₹2Cr Collateral", style={'fontSize': '12px', 'color': '#f39c12', 'marginTop': '3px', 'fontWeight': 'bold'}),
-                html.Div([
-                    html.Div("⏳ 3yr Build", style={'fontSize': '10px', 'display': 'inline-block', 'marginRight': '5px'}),
-                    html.Div("🏠 2yr Lease", style={'fontSize': '10px', 'display': 'inline-block', 'marginRight': '5px'}),
-                    html.Div("💰 Yr7 Exit", style={'fontSize': '10px', 'display': 'inline-block'}),
-                ], style={'marginTop': '5px'}),
-            ], className='mind-map-node project-node', style={
-                'position': 'absolute', 'left': '50%', 'bottom': '8%',
-                'transform': 'translateX(-50%)',
-                'background': 'rgba(255, 255, 255, 0.15)', 'color': 'white',
-                'padding': '20px', 'borderRadius': '15px',
-                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
-                'textAlign': 'center', 'cursor': 'pointer',
-                'transition': 'all 0.3s', 'border': '2px solid rgba(255,255,255,0.3)'
-            }),
-            
-            # Bottom Left - Returns to Investors
-            html.Div([
-                html.Div("💵", style={'fontSize': '28px', 'marginBottom': '5px'}),
-                html.Div("Investor Returns", style={'fontWeight': 'bold', 'fontSize': '12px'}),
-                html.Div("Debt + Interest", style={'fontSize': '10px', 'opacity': '0.8', 'marginTop': '3px'}),
-                html.Div("+ 80% Profits", style={'fontSize': '11px', 'color': '#4caf50', 'marginTop': '3px', 'fontWeight': 'bold'}),
-            ], className='mind-map-node return-investor-node', style={
-                'position': 'absolute', 'left': '8%', 'bottom': '25%',
-                'background': 'rgba(76, 175, 80, 0.25)', 'color': 'white',
-                'padding': '15px', 'borderRadius': '12px',
-                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
-                'textAlign': 'center', 'cursor': 'pointer',
-                'transition': 'all 0.3s', 'border': '2px solid rgba(76,175,80,0.5)'
-            }),
-            
-            # Bottom Right - Returns to Sponsors
-            html.Div([
-                html.Div("💰", style={'fontSize': '28px', 'marginBottom': '5px'}),
-                html.Div("Sponsor Returns", style={'fontWeight': 'bold', 'fontSize': '12px'}),
-                html.Div("Equity Return", style={'fontSize': '10px', 'opacity': '0.8', 'marginTop': '3px'}),
-                html.Div("+ Residual", style={'fontSize': '11px', 'color': '#16a085', 'marginTop': '3px', 'fontWeight': 'bold'}),
-            ], className='mind-map-node return-sponsor-node', style={
-                'position': 'absolute', 'right': '8%', 'bottom': '25%',
-                'background': 'rgba(22, 160, 133, 0.25)', 'color': 'white',
-                'padding': '15px', 'borderRadius': '12px',
-                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
-                'textAlign': 'center', 'cursor': 'pointer',
-                'transition': 'all 0.3s', 'border': '2px solid rgba(22,160,133,0.5)'
-            }),
-            
-            # Top Center - Capital Co Fees
-            html.Div([
-                html.Div("🎯", style={'fontSize': '24px', 'marginBottom': '3px'}),
-                html.Div("Cap Co Fees", style={'fontWeight': 'bold', 'fontSize': '11px'}),
-                html.Div("1.5% Mgmt", style={'fontSize': '9px', 'opacity': '0.8'}),
-                html.Div("20% Carry", style={'fontSize': '10px', 'color': '#8e44ad', 'marginTop': '2px', 'fontWeight': 'bold'}),
-            ], className='mind-map-node capco-fees-node', style={
-                'position': 'absolute', 'left': '50%', 'top': '5%',
-                'transform': 'translateX(-50%)',
-                'background': 'rgba(142, 68, 173, 0.25)', 'color': 'white',
-                'padding': '12px', 'borderRadius': '10px',
-                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
-                'textAlign': 'center', 'cursor': 'pointer',
-                'transition': 'all 0.3s', 'border': '2px solid rgba(142,68,173,0.5)'
-            }),
-            
-        ], className='mind-map-container', style={
-            'position': 'relative', 'width': '100%', 'height': '500px',
-            'margin': '0 auto', 'maxWidth': '900px'
-        }),
-        
-        html.Div([
-            html.Button("Explore the Simulation →", id='scroll-to-sim-btn', n_clicks=0, style={
-                'marginTop': '40px', 'padding': '15px 40px', 'fontSize': '18px',
-                'fontWeight': 'bold', 'background': 'white', 'color': '#667eea',
-                'border': 'none', 'borderRadius': '50px', 'cursor': 'pointer',
-                'transition': 'transform 0.3s', 'boxShadow': '0 4px 15px rgba(0,0,0,0.2)'
-            }),
-        ], style={'textAlign': 'center'}),
-        
-    ], className='hero-explainer', style={
-        'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        'color': 'white', 'padding': '50px 20px', 'marginTop': '60px',
-        'marginBottom': '20px', 'borderRadius': '12px', 'textAlign': 'center',
-        'marginLeft': '20%', 'marginRight': '20px', 'minHeight': '650px'
-    }),
     
     # Main container
     html.Div([
