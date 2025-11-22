@@ -85,23 +85,6 @@ app.index_string = '''
                     margin-right: 0 !important;
                 }
             }
-            .resizer {
-                position: fixed;
-                width: 5px;
-                cursor: col-resize;
-                background-color: #bdc3c7;
-                z-index: 999;
-                top: 0;
-                bottom: 0;
-                left: 20%;
-                transition: background-color 0.2s;
-            }
-            .resizer:hover {
-                background-color: #3498db;
-            }
-            .resizer.resizing {
-                background-color: #2980b9;
-            }
         </style>
     </head>
     <body>
@@ -111,63 +94,6 @@ app.index_string = '''
             {%scripts%}
             {%renderer%}
         </footer>
-        <script>
-            // Initialize resizer after page loads
-            function initResizer() {
-                const resizer = document.getElementById('resizer');
-                if (!resizer) {
-                    setTimeout(initResizer, 100);
-                    return;
-                }
-                
-                const leftPanel = document.querySelector('.left-panel');
-                const rightPanel = document.querySelector('.right-panel');
-                const header = document.querySelector('.header-fixed');
-                
-                let isResizing = false;
-                
-                resizer.addEventListener('mousedown', function(e) {
-                    isResizing = true;
-                    resizer.classList.add('resizing');
-                    document.body.style.cursor = 'col-resize';
-                    document.body.style.userSelect = 'none';
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-                
-                document.addEventListener('mousemove', function(e) {
-                    if (!isResizing) return;
-                    
-                    const minWidth = 15;
-                    const maxWidth = 40;
-                    const percentage = ((e.clientX / window.innerWidth) * 100);
-                    
-                    if (percentage >= minWidth && percentage <= maxWidth) {
-                        leftPanel.style.width = percentage + '%';
-                        rightPanel.style.width = (100 - percentage) + '%';
-                        rightPanel.style.marginLeft = percentage + '%';
-                        header.style.left = percentage + '%';
-                        resizer.style.left = percentage + '%';
-                    }
-                    e.preventDefault();
-                });
-                
-                document.addEventListener('mouseup', function(e) {
-                    if (isResizing) {
-                        isResizing = false;
-                        resizer.classList.remove('resizing');
-                        document.body.style.cursor = '';
-                        document.body.style.userSelect = '';
-                    }
-                });
-            }
-            
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initResizer);
-            } else {
-                initResizer();
-            }
-        </script>
     </body>
 </html>
 '''
@@ -353,9 +279,6 @@ app.layout = html.Div([
             'left': '0',
             'top': '0'
         }),
-        
-        # Resizer
-        html.Div(id='resizer', className='resizer'),
         
         # Right Panel - Visualizations
         html.Div(className='right-panel', children=[
