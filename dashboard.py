@@ -26,8 +26,10 @@ from simulate_real_estate_pool import (
     simulate_collateral_paths,
     simulate_defaults,
     generate_loan_cash_flows,
+    generate_cash_flows_with_exit,
     compute_investor_irr,
     compute_investor_npv,
+    calculate_capital_company_fees,
 )
 
 # Initialize Dash app
@@ -445,78 +447,6 @@ app.layout = html.Div([
                 }),
             ], style={'display': 'flex', 'flexWrap': 'wrap', 'marginBottom': '15px', 'gap': '0'}),
             
-            # Disclaimer Footer
-            html.Div([
-                html.H3("⚠️ Important Disclaimer & Model Limitations", 
-                       style={'color': "#212020", 'marginBottom': '15px', 'fontSize': '18px', 'fontWeight': 'bold'}),
-                
-                html.Div([
-                    html.H4("🔴 Key Limitations & Red Flags:", 
-                           style={'color': '#e74c3c', 'marginTop': '0', 'marginBottom': '10px', 'fontSize': '15px'}),
-                    html.Ul([
-                        html.Li([html.Strong("Model Simplifications: "), "Assumes independent defaults, ignores contagion effects, and uses simplified correlation structures that may not capture real-world systemic risks. ", html.Span("(In simple terms: If one borrower defaults, it might trigger others - this model doesn't account for that domino effect.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Interest Rate Model: "), "Single-factor BGM model cannot capture complex yield curve dynamics, regime changes, or central bank policy impacts. ", html.Span("(In simple terms: Real interest rate movements are more complex than what this model predicts.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Collateral Assumptions: "), "Geometric Brownian Motion (GBM) for real estate may not reflect actual property market behavior, especially during crises with fat-tailed distributions and momentum effects. ", html.Span("(In simple terms: Property prices can crash suddenly in a crisis - this model may underestimate such extreme drops.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Liquidity Risk Ignored: "), "Model assumes frictionless liquidation of collateral at market prices; real distressed sales involve significant haircuts and timing delays. ", html.Span("(In simple terms: Selling property in a crisis takes time and you'll get less than market value - not factored here.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("No Macroeconomic Factors: "), "Excludes unemployment, GDP growth, inflation, regulatory changes, and other macro variables that significantly impact credit risk. ", html.Span("(In simple terms: Economic recessions increase defaults - this isn't modeled directly.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Static Recovery Rate: "), "Assumes constant 70% recovery; in reality, this varies dramatically with market conditions and can collapse during systemic stress. ", html.Span("(In simple terms: You might recover less than 70% in a bad market or more in a good one - this model uses a fixed rate.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Calibration Risk: "), "Parameters are illustrative, not calibrated to actual market data. Real-world calibration requires extensive historical analysis. ", html.Span("(In simple terms: The numbers used here are examples, not based on real market data.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("No Legal/Operational Risk: "), "Ignores foreclosure timelines, legal costs, servicing complexities, fraud risk, and documentation issues. ", html.Span("(In simple terms: Legal battles and paperwork delays can reduce your actual returns - not included here.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                    ], style={'fontSize': '12px', 'lineHeight': '1.8', 'color': '#2c3e50', 'marginLeft': '20px'}),
-                ], style={'marginBottom': '20px'}),
-                
-                html.Div([
-                    html.H4("✅ Model Strengths:", 
-                           style={'color': '#27ae60', 'marginTop': '0', 'marginBottom': '10px', 'fontSize': '15px'}),
-                    html.Ul([
-                        html.Li([html.Strong("Comprehensive Framework: "), "Integrates interest rate risk, collateral dynamics, and credit risk in a unified Monte Carlo framework. ", html.Span("(In simple terms: Considers multiple risk factors together, giving you a more complete picture.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Transparent Methodology: "), "All assumptions and calculations are explicit and auditable in the source code. ", html.Span("(In simple terms: You can see exactly how the numbers are calculated - nothing hidden.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Scenario Analysis: "), "Allows rapid testing of different parameter assumptions to understand sensitivity to key drivers. ", html.Span("(In simple terms: Change sliders to see how different conditions affect your returns instantly.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Educational Value: "), "Demonstrates proper structure for pricing credit products with stochastic modeling techniques. ", html.Span("(In simple terms: Great learning tool to understand how risk modeling works in finance.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Customizable: "), "Code can be extended to incorporate additional risk factors, more sophisticated models, or real market data. ", html.Span("(In simple terms: You can enhance this model with more features as needed.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                    ], style={'fontSize': '12px', 'lineHeight': '1.8', 'color': '#2c3e50', 'marginLeft': '20px'}),
-                ], style={'marginBottom': '20px'}),
-                
-                html.Div([
-                    html.H4("⚠️ What to Watch Out For:", 
-                           style={'color': '#f39c12', 'marginTop': '0', 'marginBottom': '10px', 'fontSize': '15px'}),
-                    html.Ul([
-                        html.Li([html.Strong("Tail Risk Underestimation: "), "Lognormal models typically underestimate extreme events (2008-style crises). Real losses can far exceed 5th percentile estimates. ", html.Span("(In simple terms: Worst-case scenarios might be worse than shown - think housing crisis 2008.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Parameter Sensitivity: "), "Small changes in volatility, correlation, or default assumptions can drastically alter results. Always run sensitivity analysis. ", html.Span("(In simple terms: Tiny changes in inputs can lead to big changes in results - test different scenarios.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Concentration Risk: "), "Real portfolios may have geographic, borrower, or property-type concentrations not captured here. ", html.Span("(In simple terms: If all properties are in one city and that market crashes, you're in trouble.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Behavioral Assumptions: "), "Model assumes rational borrower behavior; strategic defaults and prepayment clustering during refinancing waves are ignored. ", html.Span("(In simple terms: Borrowers might walk away even when they can pay, or all refinance at once - not modeled.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Market Regime Changes: "), "Model uses constant parameters; real markets undergo structural breaks (regulatory changes, financial crises, technology disruption). ", html.Span("(In simple terms: Major events can change the rules of the game completely - this model assumes stable conditions.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                        html.Li([html.Strong("Survivorship Bias: "), "Historical real estate data often excludes failed projects, leading to overly optimistic parameter estimates. ", html.Span("(In simple terms: Past data might look better than reality because failures aren't always recorded.)", style={'fontStyle': 'italic', 'color': '#5a6c7d'})]),
-                    ], style={'fontSize': '12px', 'lineHeight': '1.8', 'color': '#2c3e50', 'marginLeft': '20px'}),
-                ], style={'marginBottom': '20px'}),
-                
-                html.Div([                                                  
-                    html.P([
-                        html.Strong("THIS IS NOT INVESTMENT ADVICE. NO RESPONSIBILITY OR LIABILITY: "),
-                        "The authors and distributors of this model assume no responsibility or liability for any losses, damages, or adverse outcomes ",
-                        "resulting from the use or misuse of this tool. Users bear full responsibility for validating assumptions, verifying results, ",
-                        "and seeking appropriate professional advice before making any financial decisions. Past performance and simulated results ",
-                        "do not guarantee future outcomes."
-                    ], style={'fontSize': '12px', 'lineHeight': '1.7', 'color': '#2c3e50', 'marginBottom': '10px'}),
-                            html.P([
-                                html.Strong("Recommended Next Steps for Serious Analysis: "),
-                                "(1) Collect and analyze historical loan performance data, (2) Calibrate parameters using maximum likelihood or Bayesian methods, ", 
-                                "(3) Implement more sophisticated models (e.g., copulas for dependency, regime-switching for market states, stochastic volatility), ",
-                                "(4) Perform extensive stress testing and scenario analysis, (5) Validate against out-of-sample data, ",
-                                "(6) Consult with legal, tax, and financial advisors, (7) Review regulatory requirements and compliance issues. ",
-                                html.Strong( "write to us krsna.nandula@gmail.com if you need help with custom implementations."),
-                            ], style={'fontSize': '12px', 'lineHeight': '1.7', 'color': '#2c3e50', 'marginBottom': '0'}),
-                        ], style={'backgroundColor': '#fff3cd', 'padding': '15px', 'borderRadius': '5px', 'border': '1px solid #ffc107'}),
-                    ], style={
-                'backgroundColor': '#f8f9fa',
-                'padding': '25px',
-                'borderRadius': '10px',
-                'border': '2px solid #dcdde1',
-                'marginTop': '30px',
-                'marginBottom': '30px',
-                'boxShadow': '0 4px 8px rgba(0,0,0,0.15)'
-            }),
-            
         ], style={
             'width': '80%',
             'display': 'inline-block',
@@ -609,29 +539,45 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
     # Step 3: Simulate defaults
     default_indicator, default_time = simulate_defaults(collateral_values, config, num_sims)
     
-    # Step 4: Generate cash flows
-    pool_cash_flows = generate_loan_cash_flows(
+    # Step 4: Generate cash flows WITH EXIT SALE (Iteration 2)
+    investor_cf, capital_co_cf, sponsor_cf = generate_cash_flows_with_exit(
         collateral_values, default_indicator, default_time, config, num_sims
     )
     
-    # Step 5: Compute metrics
-    irr_array = compute_investor_irr(pool_cash_flows, config, num_sims)
-    npv_array = compute_investor_npv(pool_cash_flows, discount_factors, config, num_sims)
+    # Step 5: Compute metrics for all stakeholders
+    investor_irr = compute_investor_irr(investor_cf, config, num_sims)
+    capital_co_irr = compute_investor_irr(capital_co_cf, config, num_sims)
+    sponsor_irr = compute_investor_irr(sponsor_cf, config, num_sims)
     
     # Calculate statistics
     total_defaults = np.sum(default_time <= config.NUM_STEPS)
     default_rate = total_defaults / (num_sims * config.NUM_PROJECTS)
     
-    mean_irr = np.mean(irr_array)
-    median_irr = np.median(irr_array)
-    p5_irr = np.percentile(irr_array, 5)
+    # Compute average capital company fees
+    mean_investor_irr = np.mean(investor_irr)
+    total_profits = np.sum(investor_cf[:, -1]) - config.TOTAL_CORPUS * config.INVESTOR_DEBT_PCT
+    avg_cc_fees = calculate_capital_company_fees(
+        aum=config.TOTAL_CORPUS,
+        years=config.PROJECT_EXIT_YEAR,
+        total_profits=max(0, total_profits / num_sims),
+        investor_irr=mean_investor_irr,
+        config=config
+    )
+    
+    mean_irr = np.mean(investor_irr)
+    median_irr = np.median(investor_irr)
+    p5_irr = np.percentile(investor_irr, 5)
+    
+    # Capital company and sponsor stats
+    mean_cc_irr = np.mean(capital_co_irr[capital_co_irr > -0.99])  # Filter failed scenarios
+    mean_sponsor_irr = np.mean(sponsor_irr[sponsor_irr > -0.99])
     
     # Create figures
     
     # 1. IRR Histogram
     fig_hist = go.Figure()
     fig_hist.add_trace(go.Histogram(
-        x=irr_array * 100,
+        x=investor_irr * 100,
         nbinsx=50,
         name='IRR Distribution',
         marker_color='rgba(52, 152, 219, 0.7)',
@@ -657,7 +603,7 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
     )
     
     # 2. IRR CDF
-    sorted_irr = np.sort(irr_array)
+    sorted_irr = np.sort(investor_irr)
     cdf = np.arange(1, len(sorted_irr) + 1) / len(sorted_irr)
     
     fig_cdf = go.Figure()
@@ -714,9 +660,9 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
         paper_bgcolor='rgba(0,0,0,0)'
     )
     
-    # 4. Expected Cash Flows
-    expected_cf = np.mean(pool_cash_flows[:, 1:] / config.NUM_INVESTORS, axis=0) / 10_000_000
-    std_cf = np.std(pool_cash_flows[:, 1:] / config.NUM_INVESTORS, axis=0) / 10_000_000
+    # 4. Expected Cash Flows (using investor_cf from Iteration 2)
+    expected_cf = np.mean(investor_cf[:, 1:] / config.NUM_INVESTORS, axis=0) / 10_000_000
+    std_cf = np.std(investor_cf[:, 1:] / config.NUM_INVESTORS, axis=0) / 10_000_000
     years_cf = np.arange(1, config.NUM_STEPS + 1) * config.DT
     
     fig_cf = go.Figure()
@@ -741,7 +687,7 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
     # 5. IRR Box Plot by Percentile
     fig_box = go.Figure()
     fig_box.add_trace(go.Box(
-        y=irr_array * 100,
+        y=investor_irr * 100,
         name='IRR',
         marker_color='rgb(52, 152, 219)',
         boxmean='sd'
@@ -760,10 +706,10 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
     
     # 6. Scenario Comparison (Probability Buckets)
     buckets = {
-        'IRR < 10%': np.mean(irr_array < 0.10) * 100,
-        '10-14%': np.mean((irr_array >= 0.10) & (irr_array < 0.14)) * 100,
-        '14-16%': np.mean((irr_array >= 0.14) & (irr_array < 0.16)) * 100,
-        'IRR > 16%': np.mean(irr_array >= 0.16) * 100,
+        'IRR < 10%': np.mean(investor_irr < 0.10) * 100,
+        '10-14%': np.mean((investor_irr >= 0.10) & (investor_irr < 0.14)) * 100,
+        '14-16%': np.mean((investor_irr >= 0.14) & (investor_irr < 0.16)) * 100,
+        'IRR > 16%': np.mean(investor_irr >= 0.16) * 100,
     }
     
     fig_buckets = go.Figure()
