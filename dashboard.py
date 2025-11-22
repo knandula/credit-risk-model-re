@@ -52,77 +52,141 @@ app.index_string = '''
         {%favicon%}
         {%css%}
         <style>
-            /* Hero Explainer Animations */
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
+            /* Mind Map Animations */
+            @keyframes popIn {
+                0% { opacity: 0; transform: scale(0.3); }
+                50% { transform: scale(1.1); }
+                100% { opacity: 1; transform: scale(1); }
             }
             
-            @keyframes slideDown {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+                50% { transform: scale(1.05); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
             }
             
-            @keyframes fillProgress {
-                from { width: 0; }
-                to { width: 100%; }
+            @keyframes drawLine {
+                from { height: 0; opacity: 0; }
+                to { height: 80px; opacity: 1; }
             }
             
-            @keyframes fillTier {
-                from { transform: scaleX(0); opacity: 0; }
-                to { transform: scaleX(1); opacity: 1; }
+            @keyframes drawLineShort {
+                from { height: 0; opacity: 0; }
+                to { height: 70px; opacity: 1; }
             }
             
-            .hero-explainer .step {
-                animation: fadeIn 0.8s ease-out forwards;
+            @keyframes glow {
+                0%, 100% { box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+                50% { box-shadow: 0 8px 30px rgba(255,255,255,0.4); }
             }
             
-            .hero-explainer .arrow {
-                animation: slideDown 0.6s ease-out forwards;
+            /* Center node - appears first with pulse */
+            .mind-map-node.center-node {
+                animation: popIn 0.8s ease-out 0.3s forwards, pulse 2s ease-in-out 1.5s infinite;
+                opacity: 0;
             }
             
-            .hero-explainer .step-1 { animation-delay: 0.2s; }
-            .hero-explainer .step-2 { animation-delay: 0.7s; }
-            .hero-explainer .step-3 { animation-delay: 1.2s; }
-            .hero-explainer .step-4 { animation-delay: 1.7s; }
-            .hero-explainer .step-5 { animation-delay: 2.2s; }
-            
-            .hero-explainer .arrow:nth-of-type(2) { animation-delay: 0.5s; }
-            .hero-explainer .arrow:nth-of-type(4) { animation-delay: 1s; }
-            .hero-explainer .arrow:nth-of-type(6) { animation-delay: 1.5s; }
-            .hero-explainer .arrow:nth-of-type(8) { animation-delay: 2s; }
-            
-            .hero-explainer .progress-fill {
-                animation: fillProgress 3s ease-out 2s forwards;
-                width: 0;
+            /* Investor and Sponsor nodes - appear from top */
+            .mind-map-node.investor-node {
+                animation: popIn 0.8s ease-out 0.8s forwards;
+                opacity: 0;
             }
             
-            .hero-explainer .tier {
-                animation: fillTier 0.8s ease-out forwards;
-                transform-origin: left;
+            .mind-map-node.sponsor-node {
+                animation: popIn 0.8s ease-out 1s forwards;
+                opacity: 0;
             }
             
-            .hero-explainer .tier-1 { animation-delay: 2.5s; }
-            .hero-explainer .tier-2 { animation-delay: 2.8s; }
-            .hero-explainer .tier-3 { animation-delay: 3.1s; }
+            /* Projects node - appears from bottom */
+            .mind-map-node.project-node {
+                animation: popIn 0.8s ease-out 1.2s forwards;
+                opacity: 0;
+            }
+            
+            /* Return nodes - appear last with glow */
+            .mind-map-node.return-investor-node {
+                animation: popIn 0.8s ease-out 1.8s forwards, glow 3s ease-in-out 2.5s infinite;
+                opacity: 0;
+            }
+            
+            .mind-map-node.return-sponsor-node {
+                animation: popIn 0.8s ease-out 2s forwards, glow 3s ease-in-out 2.5s infinite;
+                opacity: 0;
+            }
+            
+            /* Cap co fees node */
+            .mind-map-node.capco-fees-node {
+                animation: popIn 0.8s ease-out 1.5s forwards;
+                opacity: 0;
+            }
+            
+            /* Connection lines animate drawing */
+            .connection-line.line-to-investors {
+                animation: drawLine 0.6s ease-out 0.9s forwards;
+                height: 0;
+                opacity: 0;
+            }
+            
+            .connection-line.line-to-sponsors {
+                animation: drawLine 0.6s ease-out 1.1s forwards;
+                height: 0;
+                opacity: 0;
+            }
+            
+            .connection-line.line-to-construction {
+                animation: drawLine 0.6s ease-out 1.3s forwards;
+                height: 0;
+                opacity: 0;
+            }
+            
+            .connection-line.line-to-investors-return {
+                animation: drawLineShort 0.6s ease-out 1.9s forwards;
+                height: 0;
+                opacity: 0;
+            }
+            
+            .connection-line.line-to-sponsors-return {
+                animation: drawLineShort 0.6s ease-out 2.1s forwards;
+                height: 0;
+                opacity: 0;
+            }
+            
+            /* Hover effects */
+            .mind-map-node:hover {
+                transform: scale(1.15) !important;
+                box-shadow: 0 12px 35px rgba(255,255,255,0.3) !important;
+                z-index: 20 !important;
+            }
+            
+            .mind-map-node.center-node:hover {
+                transform: translate(-50%, -50%) scale(1.15) !important;
+            }
+            
+            .mind-map-node.project-node:hover {
+                transform: translateX(-50%) scale(1.15) !important;
+            }
+            
+            .mind-map-node.capco-fees-node:hover {
+                transform: translateX(-50%) scale(1.15) !important;
+            }
             
             .hero-explainer button:hover {
                 transform: scale(1.05);
             }
             
-            /* Mobile responsive adjustments for hero */
+            /* Mobile responsive adjustments for mind map */
             @media (max-width: 768px) {
                 .hero-explainer {
                     margin-left: 0 !important;
                     margin-right: 0 !important;
                     padding: 30px 15px !important;
+                    min-height: 500px !important;
                 }
-                .hero-explainer .step {
-                    flex-direction: column !important;
-                    text-align: center !important;
+                .mind-map-container {
+                    height: 400px !important;
+                    transform: scale(0.7);
                 }
-                .hero-explainer .step > div:last-child {
-                    text-align: center !important;
+                .mind-map-node {
+                    font-size: 11px !important;
                 }
             }
             
@@ -187,119 +251,169 @@ app.layout = html.Div([
                 style={'textAlign': 'center', 'color': '#2c3e50', 'marginBottom': '5px', 'marginTop': '10px', 'fontSize': '22px'}),        
     ], className='header-fixed', style={'padding': '10px', 'backgroundColor': '#ecf0f1',  'position': 'fixed', 'top': '0', 'right': '0', 'left': '20%', 'zIndex': '100', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'}),
     
-    # Animated Hero Explainer Section
+    # Interactive Mind Map Explainer
     html.Div([
-        html.H2("How This Works", style={'fontSize': '28px', 'marginBottom': '30px', 'fontWeight': '600'}),
+        html.H2("Real Estate Credit Model - Interactive Flow", style={
+            'fontSize': '28px', 'marginBottom': '10px', 'fontWeight': '600'
+        }),
+        html.P("Hover over each node to see details", style={
+            'fontSize': '14px', 'opacity': '0.8', 'marginBottom': '30px'
+        }),
+        
+        # SVG Mind Map Container
+        html.Div([
+            # Center Hub - Capital Company
+            html.Div([
+                html.Div("🏦", style={'fontSize': '36px', 'marginBottom': '5px'}),
+                html.Div("Capital Company", style={'fontWeight': 'bold', 'fontSize': '14px'}),
+                html.Div("Orchestrates Deal", style={'fontSize': '11px', 'opacity': '0.8'}),
+            ], className='mind-map-node center-node', style={
+                'position': 'absolute', 'left': '50%', 'top': '50%',
+                'transform': 'translate(-50%, -50%)',
+                'background': 'rgba(255, 255, 255, 0.95)', 'color': '#667eea',
+                'padding': '25px 30px', 'borderRadius': '50%',
+                'boxShadow': '0 8px 25px rgba(0,0,0,0.3)',
+                'textAlign': 'center', 'zIndex': '10',
+                'cursor': 'pointer', 'transition': 'all 0.3s',
+                'minWidth': '140px', 'minHeight': '140px',
+                'display': 'flex', 'flexDirection': 'column',
+                'justifyContent': 'center', 'alignItems': 'center'
+            }),
+            
+            # Connecting Lines (animated)
+            html.Div(className='connection-line line-to-investors', style={
+                'position': 'absolute', 'left': '35%', 'top': '25%',
+                'width': '2px', 'height': '80px', 'background': 'rgba(255,255,255,0.5)',
+                'transformOrigin': 'bottom', 'transform': 'rotate(-45deg)'
+            }),
+            html.Div(className='connection-line line-to-sponsors', style={
+                'position': 'absolute', 'right': '35%', 'top': '25%',
+                'width': '2px', 'height': '80px', 'background': 'rgba(255,255,255,0.5)',
+                'transformOrigin': 'bottom', 'transform': 'rotate(45deg)'
+            }),
+            html.Div(className='connection-line line-to-construction', style={
+                'position': 'absolute', 'left': '50%', 'top': '60%',
+                'width': '2px', 'height': '80px', 'background': 'rgba(255,255,255,0.5)',
+                'transformOrigin': 'top'
+            }),
+            html.Div(className='connection-line line-to-investors-return', style={
+                'position': 'absolute', 'left': '30%', 'bottom': '20%',
+                'width': '2px', 'height': '70px', 'background': 'rgba(76,175,80,0.6)',
+                'transformOrigin': 'top', 'transform': 'rotate(-30deg)'
+            }),
+            html.Div(className='connection-line line-to-sponsors-return', style={
+                'position': 'absolute', 'right': '30%', 'bottom': '20%',
+                'width': '2px', 'height': '70px', 'background': 'rgba(76,175,80,0.6)',
+                'transformOrigin': 'top', 'transform': 'rotate(30deg)'
+            }),
+            
+            # Top Left - Investors
+            html.Div([
+                html.Div("👥", style={'fontSize': '32px', 'marginBottom': '5px'}),
+                html.Div("10 Investors", style={'fontWeight': 'bold', 'fontSize': '13px'}),
+                html.Div("₹1Cr each", style={'fontSize': '11px', 'opacity': '0.8', 'marginTop': '3px'}),
+                html.Div("= ₹10Cr Total", style={'fontSize': '12px', 'color': '#4caf50', 'marginTop': '3px', 'fontWeight': 'bold'}),
+                html.Div("70% as Debt", style={'fontSize': '10px', 'background': 'rgba(52,152,219,0.2)', 'padding': '3px 8px', 'borderRadius': '10px', 'marginTop': '5px'}),
+            ], className='mind-map-node investor-node', style={
+                'position': 'absolute', 'left': '10%', 'top': '8%',
+                'background': 'rgba(255, 255, 255, 0.15)', 'color': 'white',
+                'padding': '20px', 'borderRadius': '15px',
+                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
+                'textAlign': 'center', 'cursor': 'pointer',
+                'transition': 'all 0.3s', 'border': '2px solid rgba(255,255,255,0.3)'
+            }),
+            
+            # Top Right - Sponsors
+            html.Div([
+                html.Div("🏗️", style={'fontSize': '32px', 'marginBottom': '5px'}),
+                html.Div("Sponsors", style={'fontWeight': 'bold', 'fontSize': '13px'}),
+                html.Div("Construction Cos", style={'fontSize': '11px', 'opacity': '0.8', 'marginTop': '3px'}),
+                html.Div("₹3Cr Equity", style={'fontSize': '12px', 'color': '#16a085', 'marginTop': '3px', 'fontWeight': 'bold'}),
+                html.Div("30% Skin in Game", style={'fontSize': '10px', 'background': 'rgba(22,160,133,0.3)', 'padding': '3px 8px', 'borderRadius': '10px', 'marginTop': '5px'}),
+            ], className='mind-map-node sponsor-node', style={
+                'position': 'absolute', 'right': '10%', 'top': '8%',
+                'background': 'rgba(255, 255, 255, 0.15)', 'color': 'white',
+                'padding': '20px', 'borderRadius': '15px',
+                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
+                'textAlign': 'center', 'cursor': 'pointer',
+                'transition': 'all 0.3s', 'border': '2px solid rgba(255,255,255,0.3)'
+            }),
+            
+            # Bottom - Real Estate Projects
+            html.Div([
+                html.Div("🏘️", style={'fontSize': '32px', 'marginBottom': '5px'}),
+                html.Div("10 RE Projects", style={'fontWeight': 'bold', 'fontSize': '13px'}),
+                html.Div("₹1Cr per project", style={'fontSize': '11px', 'opacity': '0.8', 'marginTop': '3px'}),
+                html.Div("₹2Cr Collateral", style={'fontSize': '12px', 'color': '#f39c12', 'marginTop': '3px', 'fontWeight': 'bold'}),
+                html.Div([
+                    html.Div("⏳ 3yr Build", style={'fontSize': '10px', 'display': 'inline-block', 'marginRight': '5px'}),
+                    html.Div("🏠 2yr Lease", style={'fontSize': '10px', 'display': 'inline-block', 'marginRight': '5px'}),
+                    html.Div("💰 Yr7 Exit", style={'fontSize': '10px', 'display': 'inline-block'}),
+                ], style={'marginTop': '5px'}),
+            ], className='mind-map-node project-node', style={
+                'position': 'absolute', 'left': '50%', 'bottom': '8%',
+                'transform': 'translateX(-50%)',
+                'background': 'rgba(255, 255, 255, 0.15)', 'color': 'white',
+                'padding': '20px', 'borderRadius': '15px',
+                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
+                'textAlign': 'center', 'cursor': 'pointer',
+                'transition': 'all 0.3s', 'border': '2px solid rgba(255,255,255,0.3)'
+            }),
+            
+            # Bottom Left - Returns to Investors
+            html.Div([
+                html.Div("💵", style={'fontSize': '28px', 'marginBottom': '5px'}),
+                html.Div("Investor Returns", style={'fontWeight': 'bold', 'fontSize': '12px'}),
+                html.Div("Debt + Interest", style={'fontSize': '10px', 'opacity': '0.8', 'marginTop': '3px'}),
+                html.Div("+ 80% Profits", style={'fontSize': '11px', 'color': '#4caf50', 'marginTop': '3px', 'fontWeight': 'bold'}),
+            ], className='mind-map-node return-investor-node', style={
+                'position': 'absolute', 'left': '8%', 'bottom': '25%',
+                'background': 'rgba(76, 175, 80, 0.25)', 'color': 'white',
+                'padding': '15px', 'borderRadius': '12px',
+                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
+                'textAlign': 'center', 'cursor': 'pointer',
+                'transition': 'all 0.3s', 'border': '2px solid rgba(76,175,80,0.5)'
+            }),
+            
+            # Bottom Right - Returns to Sponsors
+            html.Div([
+                html.Div("💰", style={'fontSize': '28px', 'marginBottom': '5px'}),
+                html.Div("Sponsor Returns", style={'fontWeight': 'bold', 'fontSize': '12px'}),
+                html.Div("Equity Return", style={'fontSize': '10px', 'opacity': '0.8', 'marginTop': '3px'}),
+                html.Div("+ Residual", style={'fontSize': '11px', 'color': '#16a085', 'marginTop': '3px', 'fontWeight': 'bold'}),
+            ], className='mind-map-node return-sponsor-node', style={
+                'position': 'absolute', 'right': '8%', 'bottom': '25%',
+                'background': 'rgba(22, 160, 133, 0.25)', 'color': 'white',
+                'padding': '15px', 'borderRadius': '12px',
+                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
+                'textAlign': 'center', 'cursor': 'pointer',
+                'transition': 'all 0.3s', 'border': '2px solid rgba(22,160,133,0.5)'
+            }),
+            
+            # Top Center - Capital Co Fees
+            html.Div([
+                html.Div("🎯", style={'fontSize': '24px', 'marginBottom': '3px'}),
+                html.Div("Cap Co Fees", style={'fontWeight': 'bold', 'fontSize': '11px'}),
+                html.Div("1.5% Mgmt", style={'fontSize': '9px', 'opacity': '0.8'}),
+                html.Div("20% Carry", style={'fontSize': '10px', 'color': '#8e44ad', 'marginTop': '2px', 'fontWeight': 'bold'}),
+            ], className='mind-map-node capco-fees-node', style={
+                'position': 'absolute', 'left': '50%', 'top': '5%',
+                'transform': 'translateX(-50%)',
+                'background': 'rgba(142, 68, 173, 0.25)', 'color': 'white',
+                'padding': '12px', 'borderRadius': '10px',
+                'boxShadow': '0 4px 15px rgba(0,0,0,0.2)',
+                'textAlign': 'center', 'cursor': 'pointer',
+                'transition': 'all 0.3s', 'border': '2px solid rgba(142,68,173,0.5)'
+            }),
+            
+        ], className='mind-map-container', style={
+            'position': 'relative', 'width': '100%', 'height': '500px',
+            'margin': '0 auto', 'maxWidth': '900px'
+        }),
         
         html.Div([
-            # Step 1: Investors
-            html.Div([
-                html.Div("👥", style={'fontSize': '48px', 'minWidth': '60px'}),
-                html.Div([
-                    html.H3("1. Investors Pool Capital", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
-                    html.P([
-                        "10 investors contribute ₹1 Crore each = ",
-                        html.Strong("₹10 Crore total")
-                    ], style={'margin': '0', 'fontSize': '14px', 'opacity': '0.9'}),
-                ], style={'textAlign': 'left', 'flex': '1'}),
-            ], className='step step-1', style={
-                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
-                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
-                'borderRadius': '8px', 'marginBottom': '10px'
-            }),
-            
-            html.Div("↓", className='arrow', style={'fontSize': '32px', 'margin': '10px 0'}),
-            
-            # Step 2: Capital Structure
-            html.Div([
-                html.Div("🏦", style={'fontSize': '48px', 'minWidth': '60px'}),
-                html.Div([
-                    html.H3("2. Capital Company Structures Deal", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
-                    html.P([
-                        html.Strong("70% Debt"), " (₹7Cr) + ", html.Strong("30% Sponsor Equity"), " (₹3Cr)"
-                    ], style={'margin': '0', 'fontSize': '14px', 'opacity': '0.9'}),
-                ], style={'textAlign': 'left', 'flex': '1'}),
-            ], className='step step-2', style={
-                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
-                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
-                'borderRadius': '8px', 'marginBottom': '10px'
-            }),
-            
-            html.Div("↓", className='arrow', style={'fontSize': '32px', 'margin': '10px 0'}),
-            
-            # Step 3: Real Estate Projects
-            html.Div([
-                html.Div("🏗️", style={'fontSize': '48px', 'minWidth': '60px'}),
-                html.Div([
-                    html.H3("3. Construction Companies Build", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
-                    html.P([
-                        "10 projects × ₹1Cr each with ", html.Strong("₹2Cr real estate collateral")
-                    ], style={'margin': '0', 'fontSize': '14px', 'opacity': '0.9'}),
-                ], style={'textAlign': 'left', 'flex': '1'}),
-            ], className='step step-3', style={
-                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
-                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
-                'borderRadius': '8px', 'marginBottom': '10px'
-            }),
-            
-            html.Div("↓", className='arrow', style={'fontSize': '32px', 'margin': '10px 0'}),
-            
-            # Step 4: Time Passes
-            html.Div([
-                html.Div("⏳", style={'fontSize': '48px', 'minWidth': '60px'}),
-                html.Div([
-                    html.H3("4. Properties Mature (7 Years)", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
-                    html.Div([
-                        html.Div(className='progress-fill', style={
-                            'height': '100%', 'background': '#4caf50', 'borderRadius': '10px'
-                        }),
-                    ], style={
-                        'width': '100%', 'height': '20px', 'background': 'rgba(255, 255, 255, 0.2)',
-                        'borderRadius': '10px', 'overflow': 'hidden', 'margin': '10px 0'
-                    }),
-                    html.P("Construction → Lease-up → Sale", style={'margin': '0', 'fontSize': '14px', 'opacity': '0.9'}),
-                ], style={'textAlign': 'left', 'flex': '1'}),
-            ], className='step step-4', style={
-                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
-                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
-                'borderRadius': '8px', 'marginBottom': '10px'
-            }),
-            
-            html.Div("↓", className='arrow', style={'fontSize': '32px', 'margin': '10px 0'}),
-            
-            # Step 5: Waterfall Distribution
-            html.Div([
-                html.Div("💰", style={'fontSize': '48px', 'minWidth': '60px'}),
-                html.Div([
-                    html.H3("5. Profits Distributed via Waterfall", style={'margin': '0 0 10px 0', 'fontSize': '18px'}),
-                    html.Div([
-                        html.Div([html.Span("Tier 1: ", style={'fontWeight': 'bold'}), "Debt repayment to investors"], 
-                                className='tier tier-1', style={
-                                    'background': 'rgba(255, 255, 255, 0.15)', 'padding': '8px',
-                                    'margin': '5px 0', 'borderRadius': '5px', 'fontSize': '13px'
-                                }),
-                        html.Div([html.Span("Tier 2: ", style={'fontWeight': 'bold'}), "Equity return to sponsors"], 
-                                className='tier tier-2', style={
-                                    'background': 'rgba(255, 255, 255, 0.15)', 'padding': '8px',
-                                    'margin': '5px 0', 'borderRadius': '5px', 'fontSize': '13px'
-                                }),
-                        html.Div([html.Span("Tier 3: ", style={'fontWeight': 'bold'}), "Profit split 80/20 (investors/capital co)"], 
-                                className='tier tier-3', style={
-                                    'background': 'rgba(255, 255, 255, 0.15)', 'padding': '8px',
-                                    'margin': '5px 0', 'borderRadius': '5px', 'fontSize': '13px'
-                                }),
-                    ], style={'marginTop': '10px'}),
-                ], style={'textAlign': 'left', 'flex': '1'}),
-            ], className='step step-5', style={
-                'display': 'flex', 'alignItems': 'center', 'gap': '20px',
-                'background': 'rgba(255, 255, 255, 0.1)', 'padding': '20px',
-                'borderRadius': '8px', 'marginBottom': '10px'
-            }),
-        ], style={'maxWidth': '800px', 'margin': '0 auto'}),
-        
-        html.Div([
-            html.Button("Try the Simulation →", id='scroll-to-sim-btn', n_clicks=0, style={
-                'marginTop': '30px', 'padding': '15px 40px', 'fontSize': '18px',
+            html.Button("Explore the Simulation →", id='scroll-to-sim-btn', n_clicks=0, style={
+                'marginTop': '40px', 'padding': '15px 40px', 'fontSize': '18px',
                 'fontWeight': 'bold', 'background': 'white', 'color': '#667eea',
                 'border': 'none', 'borderRadius': '50px', 'cursor': 'pointer',
                 'transition': 'transform 0.3s', 'boxShadow': '0 4px 15px rgba(0,0,0,0.2)'
@@ -308,9 +422,9 @@ app.layout = html.Div([
         
     ], className='hero-explainer', style={
         'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        'color': 'white', 'padding': '40px 20px', 'marginTop': '60px',
+        'color': 'white', 'padding': '50px 20px', 'marginTop': '60px',
         'marginBottom': '20px', 'borderRadius': '12px', 'textAlign': 'center',
-        'marginLeft': '20%', 'marginRight': '20px'
+        'marginLeft': '20%', 'marginRight': '20px', 'minHeight': '650px'
     }),
     
     # Main container
