@@ -603,7 +603,8 @@ def update_dashboard(n_clicks, num_sims, loan_coupon, re_drift, re_vol,
                 'font': {'size': 20, 'color': '#7f8c8d'}
             }]
         )
-        return ["--"] * 4 + [empty_fig] * 6 + [""]
+        # Return: 7 card values + 8 figures + 1 loading message = 16 values
+        return ["--"] * 7 + [empty_fig] * 8 + [""]
     
     # Create config with user parameters
     config = SimulationConfig()
